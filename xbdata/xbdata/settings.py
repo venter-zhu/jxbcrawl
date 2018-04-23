@@ -9,6 +9,11 @@
 #     https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
+#mongodb config
+MONGO_HOST = '127.0.0.1'
+MONGO_PORT = 27017
+MONGO_DBNAME = 'scrapy'
+
 # 移动端浏览器user-agent
 MY_USER_AGENT = [
     "Mozilla/5.0 (Linux; U; Android 4.0.3; zh-cn; M032 Build/IML74K) AppleWebKit/533.1 (KHTML, like Gecko)Version/4.0 MQQBrowser/4.1 Mobile Safari/533.1",
@@ -23,6 +28,8 @@ MY_USER_AGENT = [
     "IUC(U;iOS 5.1.1;Zh-cn;320*480;)/UCWEB8.9.1.271/42/800",
 ]
 
+HTTP_PROXY = "http://127.0.0.1:8087"
+
 BOT_NAME = 'xbdata'
 
 SPIDER_MODULES = ['xbdata.spiders']
@@ -35,18 +42,18 @@ NEWSPIDER_MODULE = 'xbdata.spiders'
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 1
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 DOWNLOAD_DELAY = 15
 # The download delay setting will honor only one of:
-#CONCURRENT_REQUESTS_PER_DOMAIN = 16
-#CONCURRENT_REQUESTS_PER_IP = 16
+CONCURRENT_REQUESTS_PER_DOMAIN = 1
+CONCURRENT_REQUESTS_PER_IP = 1
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+# COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -67,7 +74,8 @@ DOWNLOAD_DELAY = 15
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     # 'xbdata.middlewares.XbdataDownloaderMiddleware': 543,
-    'xbdata.middlewares.RandomUserAgentMiddleware': 400
+    'xbdata.middlewares.RandomUserAgentMiddleware': 400,
+    'xbdata.middlewares.ProxyMiddleware': 410
 }
 
 # Enable or disable extensions
@@ -78,9 +86,10 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'xbdata.pipelines.XbdataPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    #    'xbdata.pipelines.XbdataPipeline': 300,
+    'xbdata.pipelines.MeituanPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

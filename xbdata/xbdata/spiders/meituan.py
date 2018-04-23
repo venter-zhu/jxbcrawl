@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
-import json
 import hashlib
+import json
+import os
+import time
 
 import scrapy
-from scrapy import Request, log, FormRequest
-import os
+from scrapy import FormRequest, Request, log
+
+from ..items import MeituanItem
 
 RESULT_PATH = os.path.join(os.path.abspath('..'), 'result')
 
 # 试点，目前只针对北京地区，后续应该改进，范围扩大到美团上的所有商家信息
 PSOT_DATA = {
-    "offset": '0',
-    "limit": '15',
-    "cateId": '1',
-    "lineId": '0',
-    "stationId": '0',
-    "areaId": '17',
+    "offset": "0",
+    "limit": "15",
+    "cateId": "1",
+    "lineId": "0",
+    "stationId": "0",
+    "areaId": "17",
     "sort": "default",
     "deal_attr_23": "",
     "deal_attr_24": "",
@@ -33,10 +36,12 @@ class MeituanSpider(scrapy.Spider):
     # parse_index
     # 获取分类链接，每个地区下面都有一个二级分类,三级分类暂且不考虑
     def parse(self, response):
+
         content = response.xpath('/html/body/script[8]/text()').extract_first()
         json_obj = self.get_json_str(content)
         area_list = json_obj.get('navBarData').get('areaList')
         for item in area_list:
+            # yield self.save_data(response, 'meituanList', item)
             PSOT_DATA['areaId'] = str(item.get("id"))
             yield FormRequest(
                 "http://meishi.meituan.com/i/api/channel/deal/list",
@@ -48,7 +53,9 @@ class MeituanSpider(scrapy.Spider):
         pass
 
     def parse_list(self, response):
+
         json_obj = self.get_json_str(response.body.decode())
+        yield self.save_data(response, 'list')
         if json_obj.get('status') == 0:
             total = json_obj.get('data').get('poiList').get('totalCount')
             item_list = json_obj.get('data').get('poiList').get('poiInfos')
@@ -59,9 +66,7 @@ class MeituanSpider(scrapy.Spider):
             yield Request(url.format(poiid=poiid, ct_poi=ct_poi), callback=self.parse_detail)
 
     def parse_detail(self, response):
-        filename = self.url_to_md5(response.url) + '.json'
-        with open(os.path.join(RESULT_PATH, filename), mode='wb') as f:
-            f.write(response.body)
+        yield self.save_data(response, 'detail')
 
     def get_json_str(self, content):
         # 截取json格式的数据
@@ -69,7 +74,7 @@ class MeituanSpider(scrapy.Spider):
             try:
                 return json.loads(content)
             except json.JSONDecodeError as e:
-                log.msg("JSON编码错误", _level=log.ERROR)
+                log.msg("JSON编码错误", _level=log.logging.ERROR)
                 return None
         json_str = content.split('window._appState = ')[1]
         json_str = json_str[:json_str.rindex("}") + 1]
@@ -81,3 +86,13 @@ class MeituanSpider(scrapy.Spider):
         m1 = hashlib.md5()
         m1.update(url_str.encode(encoding='utf-8'))
         return m1.hexdigest()
+
+    def save_data(self, response, type_):
+        item = MeituanItem()
+        item['type'] = type_
+        item['url'] = response.request.url
+        item['args'] = response.request.body
+        item['method'] = response.request.method
+        item['content'] = response.body.decode()
+        item['time'] = time.strftime("%Y%m%d %H:%M:%S")
+        return item

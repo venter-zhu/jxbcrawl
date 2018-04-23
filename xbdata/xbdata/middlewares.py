@@ -7,6 +7,7 @@
 
 from scrapy import signals
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from scrapy import settings
 import random
 
 
@@ -48,7 +49,7 @@ class XbdataSpiderMiddleware(object):
     def process_start_requests(self, start_requests, spider):
         # Called with the start requests of the spider, and works
         # similarly to the process_spider_output() method, except
-        # that it doesn’t have a response associated.
+        # that it doesnâ€™t have a response associated.
 
         # Must return only requests (not items).
         for r in start_requests:
@@ -117,3 +118,16 @@ class RandomUserAgentMiddleware(UserAgentMiddleware):
     def process_request(self, request, spider):
         agent = random.choice(self.user_agent)
         request.headers['User-Agent'] = agent
+
+
+class ProxyMiddleware(object):
+
+    def __init__(self, proxy):
+        self.proxy = proxy
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(proxy=crawler.settings.get('HTTP_PROXY'))
+
+    def process_request(self, request, spider):
+        request.meta['proxy'] = self.proxy
